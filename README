@@ -1,0 +1,68 @@
+WHAT IS THIS?
+
+This is the source for the simple tiny url service that is 
+currently running at http://tiny.io.
+
+tiny.io runs using "Nunja", a simple libevent-based web
+server. It can be easily scaled by deploying multiple 
+Nunja-based daemons under the pound load-balancer.
+A sample pound.cfg is included.  Data is stored in MongoDB.
+
+
+DEPENDENCIES
+
+This tiny url service is built using the following components:
+	Nu		The Nu scripting language
+	NuMongoDB	Objective-C interface to MongoDB
+	NuJSON		Objective-C library for JSON serialization
+	NuMarkup 	Nu operators for HTML generation	
+	Nunja		A libevent-based webserver for use with Nu
+	NuHTTPHelpers	HTTP helpers for use with Nu and Nunja
+
+A MongoDB installation is also necessary.
+
+
+A TINY API 
+
+Currently tiny urls are created with a call to the tiny.io API.
+
+Examples:
+
+1. curl http://tiny.io/api/shorten -d url=http://www.neontology.com -d key=TINY_KEY
+
+   This creates and returns a random string as the tiny url.
+
+2. curl http://tiny.io/api/shorten -d url=http://programming.nu -d tiny=nu -d key=TINY_KEY
+
+   This attempts to use the specified string as the tiny url.
+
+Tiny url creation will fail if a specified "tiny" value is in use, 
+and if a url already has been mapped to a tiny value, that value will
+be used instead of any specified or newly-generated value.
+
+
+AUTHENTICATION
+
+Currently the tiny server uses a trivial method of authentication. URL 
+shortening requests must include a user key that is read from the 
+TINY_KEY environment variable.
+
+
+HELPFUL MongoDB COMMANDS
+
+# select the tinyio database
+> use tinyio
+
+# remove hits added by benchmarking
+> db.hits.find({user_agent:"ApacheBench/2.3"})
+
+
+COPYRIGHT
+
+Copyright 2010, Neon Design Technology, Inc.
+
+
+LICENSE
+
+Apache License, v2.0.
+

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# kill existing processes
+ps uax | grep tinyd | grep nush | awk '{print "kill -9 ",$2}' | sh
+
+# start new ones
+nohup ./tinyd -p 9000 >& tinyd-9000.log &
+nohup ./tinyd -p 9001 >& tinyd-9001.log &
+nohup ./tinyd -p 9002 >& tinyd-9002.log &
+nohup ./tinyd -p 9003 >& tinyd-9003.log &

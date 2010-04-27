@@ -1,0 +1,61 @@
+body {
+	font-family:arial,sans-serif;
+        margin: 10px;
+	padding: 0;
+	text-align: left;
+	color: #666;
+	line-height: 1em;
+	background-color: #fff;
+}
+#card {
+	width: 200px;
+	margin: 10px auto 10px auto;
+	background-color: #fff;
+}
+#links {
+	border-top: 1px solid #aaa;
+        padding-top: 5px;
+        letter-spacing: 2px;
+	margin-left: 2px;
+}
+h1 {
+	color: #aaa;
+}
+h2 {
+	color: #c01010;
+	font-size: 120%;
+	padding-left: 2px;
+}
+p {
+	font-family: arial, sans-serif;
+	padding-left: 2px;
+}
+h1 a, h1 a:visited, h1 a:active {
+	color: #aaa;
+	text-decoration: none;
+	border-bottom: 1px dotted #eee;
+}
+h1 a:hover {
+	color: #999;
+}
+h2 a, h2 a:visited, h2 a:active {
+	color: #c01010;
+	text-decoration: none;
+	border-bottom: 1px dotted #eee;
+}
+h2 a:hover {
+	color: #a01010;
+}
+
+a, a:visited, a:active {
+        color: #666;
+	text-decoration: none;
+	border-bottom: 1px dotted #eee;
+}
+a:hover {
+	color: #222;
+}
+li {
+        list-style-type:none;
+}
+a img {border:none}
