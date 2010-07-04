@@ -13,8 +13,7 @@
           (if (headers Referer:)
               (hit referrer:(headers Referer:)))
           (set ip_address (hit ip_address:))
-          (mongo insert:hit intoCollection:"tinyio.hits")
-
-          (REQUEST redirectToLocation:url))
+          (mongo insertObject:hit intoCollection:"tinyio.hits")
+          (REQUEST redirectResponseToLocation:url))
     
     (else (return nil)))

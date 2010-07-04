@@ -8,9 +8,9 @@
          (else
               (if (set entry (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls"))
                   (then nil) ;; this tiny url is already in use
-                  (else (mongo insert:(dict url:url
-                                            tiny:tiny
-                                            created:((NSDate date) timeIntervalSinceReferenceDate))
+                  (else (mongo insertObject:(dict url:url
+                                                  tiny:tiny
+                                                  created:((NSDate date) timeIntervalSinceReferenceDate))
                                intoCollection:"tinyio.tinyurls")
                         tiny)))))
 
@@ -31,8 +31,8 @@
                      (set tiny (random-string 3))
                      (set result (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls"))
                      (unless result (break)))
-              (mongo insert:(dict url:url
-                                  tiny:tiny
-                                  created:((NSDate date) timeIntervalSinceReferenceDate))
+              (mongo insertObject:(dict url:url
+                                        tiny:tiny
+                                        created:((NSDate date) timeIntervalSinceReferenceDate))
                      intoCollection:"tinyio.tinyurls")
               tiny)))

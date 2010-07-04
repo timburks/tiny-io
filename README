@@ -57,6 +57,15 @@ HELPFUL MongoDB COMMANDS
 > db.hits.find({user_agent:"ApacheBench/2.3"})
 
 
+COMMAND LINE TOOLS
+
+# to backup a collection
+% mongoexport -d tinyio -c tinyurls > tinyio-tinyurls.json
+
+# to restore a collection
+% mongoimport -drop  -c tinyurls -d tinyio < tinyio-tinyurls.json
+
+
 COPYRIGHT
 
 Copyright 2010, Neon Design Technology, Inc.

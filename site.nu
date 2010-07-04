@@ -1,5 +1,4 @@
 (load "NuHTTPHelpers")
-(load "Nunja")
 (load "NuJSON")
 (load "NuMarkup")
 (load "NuMarkup:xhtml")
@@ -30,6 +29,7 @@
                    (result dataUsingEncoding:NSUTF8StringEncoding))
                   (json: ;; all handlers used with this macro are expected to return a dictionary that we convert to JSON
                    (REQUEST setContentType:"application/json")
+(puts (result description))
                    ((result JSONRepresentation) dataUsingEncoding:NSUTF8StringEncoding)))))
 
 (set HOST "tiny.io")
@@ -46,12 +46,12 @@
 (get "/hits/useragent"
      (generate html:"site/hits-useragent.nu"))
 
-(get "/hits/url/:tinyurl"
+(get "/hits/url/tinyurl:"
      (generate html:"site/hits-tinyurl.nu"))
 
-(get "/hits/ip/:ip"
+(get "/hits/ip/ip:"
      (generate html:"site/hits-ip.nu"))
 
-(get "/:id"
+(get "/id:"
      (generate html:"site/redirect.nu"))
 
