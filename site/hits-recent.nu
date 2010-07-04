@@ -1,7 +1,7 @@
 (set results (mongo findArray:(dict $query:(dict) $orderby:(dict created:-1))
-                    inCollection:"tinyio.hits" 
-		    returningFields:nil
-                    numberToReturn:100 
+                    inCollection:"tinyio.hits"
+                    returningFields:nil
+                    numberToReturn:100
                     numberToSkip:0))
 
 (&html

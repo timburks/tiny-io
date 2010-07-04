@@ -1,9 +1,9 @@
 (set ip-address ((REQUEST bindings) ip:))
 
 (set results (mongo findArray:(dict $query:(dict ip_address:ip-address) $orderby:(dict created:-1))
-                    inCollection:"tinyio.hits" 
+                    inCollection:"tinyio.hits"
                     returningFields:nil
-                    numberToReturn:100 
+                    numberToReturn:100
                     numberToSkip:0))
 
 (&html

@@ -1,6 +1,6 @@
 (set key ((REQUEST post) key:))
 
-(set TINY_KEY (((NSProcessInfo processInfo) environment) objectForKey:"TINY_KEY"))
+(set TINY_KEY (((NSProcessInfo processInfo) environment) TINY_KEY:))
 
 (if (eq key TINY_KEY)
     (then (if (and (set url ((REQUEST post) url:)) (> (url length) 0))
