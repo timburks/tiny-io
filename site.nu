@@ -29,7 +29,7 @@
                    (result dataUsingEncoding:NSUTF8StringEncoding))
                   (json: ;; all handlers used with this macro are expected to return a dictionary that we convert to JSON
                    (REQUEST setContentType:"application/json")
-(puts (result description))
+                   (puts (result description))
                    ((result JSONRepresentation) dataUsingEncoding:NSUTF8StringEncoding)))))
 
 (set HOST "tiny.io")
