@@ -44,10 +44,14 @@ AUTHENTICATION
 
 Currently the tiny server uses a trivial method of authentication. URL 
 shortening requests must include a user key that is read from the 
-TINY_KEY environment variable.
+TINY_KEY environment variable. Optionally, one ore more user keys
+may be stored in the "secrets" collection in objects with the a
+key named "key". To set this from the MongoDB shell, use the following:
+
+> db.secrets.insert({key:"my-secret"})
 
 
-HELPFUL MongoDB COMMANDS
+MORE HELPFUL MongoDB COMMANDS
 
 # select the tinyio database
 > use tinyio
