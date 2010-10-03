@@ -1,57 +1,226 @@
 (load "NuHTTPHelpers")
-(load "NuJSON")
-(load "NuMarkup")
 (load "NuMarkup:xhtml")
+(load "NuMongoDB")
 
-(load "common/application.nu")
-(load "common/database.nu")
-
-(set codecache (dict))
-
-(macro generate (format code)
-     `(progn
-            (try
-                ;; if necessary, parse and cache the action-handling code.
-                (set parsed (codecache ,code))
-                (unless parsed
-                        (set parsed (_parser parse:(NSString stringWithContentsOfFile:,code)))
-                        (codecache setObject:parsed forKey:,code))
-                ;; run the action handler
-                (set result (eval parsed))
-                ;; handle exceptions, including early returns
-                (catch (exception)
-                       (if (exception isKindOfClass:NuReturnException)
-                           (then (set result (exception value)))
-                           (else (set result (+ "error: " (exception description)))))))
-            (case ,format
-                  (html: ;; all handlers used with this macro are expected to return HTML
-                   (REQUEST setContentType:"text/html")
-                   (result dataUsingEncoding:NSUTF8StringEncoding))
-                  (json: ;; all handlers used with this macro are expected to return a dictionary that we convert to JSON
-                   (REQUEST setContentType:"application/json")
-                   (puts (result description))
-                   ((result JSONRepresentation) dataUsingEncoding:NSUTF8StringEncoding)))))
+(set mongo (NuMongoDB new))
+(mongo connectWithOptions:nil)
 
 (set HOST "tiny.io")
 
-(post "/api/shorten"
-      (generate json:"site/shorten.nu"))
+;; helpers
 
-(get "/hits/recent"
-     (generate html:"site/hits-recent.nu"))
+(function save-url-with-tiny (url tiny)
+     ;; does a tinyurl exist for this url?
+     (if (set entry (mongo findOne:(dict url:url) inCollection:"tinyio.tinyurls"))
+         (then (entry tiny:)) ;; if it does, return the tiny url
+         (else ;; otherwise, add the specified tiny url to the database and return it
+               (if (set entry (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls"))
+                   (then nil) ;; this tiny url is already in use
+                   (else (mongo insertObject:(dict url:url
+                                                   tiny:tiny
+                                                   created:((NSDate date) timeIntervalSinceReferenceDate))
+                                intoCollection:"tinyio.tinyurls")
+                         tiny)))))
 
-(get "/hits/referrer"
-     (generate html:"site/hits-referrer.nu"))
+(function random-string (n)
+     (set alpha "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoparstuvwxyz0123456789")
+     (set max (alpha length))
+     (set s "")
+     (n times:(do (i) (s appendCharacter:(alpha characterAtIndex:((rand max) intValue)))))
+     s)
 
-(get "/hits/useragent"
-     (generate html:"site/hits-useragent.nu"))
+(function save-url (url)
+     (if (set entry (mongo findOne:(dict url:url) inCollection:"tinyio.tinyurls"))
+         ;; if an entry already exists in the database, return the tiny url for the specified url
+         (then (entry tiny:))
+         ;; otherwise, add the specified tiny url to the database and return it
+         (else (set found YES)
+               (while found
+                      (set tiny (random-string 3))
+                      (set found (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls")))
+               (mongo insertObject:(dict url:url
+                                         tiny:tiny
+                                         created:((NSDate date) timeIntervalSinceReferenceDate))
+                      intoCollection:"tinyio.tinyurls")
+               tiny)))
 
-(get "/hits/url/tinyurl:"
-     (generate html:"site/hits-tinyurl.nu"))
+;; generate tinyurls
 
-(get "/hits/ip/ip:"
-     (generate html:"site/hits-ip.nu"))
+(macro form-page (title body)
+     `(&html
+           (&head
+                (&link href:"/css/style.css" rel:"stylesheet" type:"text/css")
+                (&meta http-equiv:"Content-type" content:"text/html;charset:UTF-8")
+                (&title ,title))
+           (&body
+                (&div style:"width:600px; margin:0 auto;"
+                     (&table
+                          (&tr valign:"top"
+                               (&td (&img src:"img/nukular-75.png" alt:"nukular"))
+                               (&td align:"right"
+                                    (&h1 "tiny.io")
+                                    (&p "a little URL shortener"))
+                               (&td (&div id:"pane"
+                                         style:"margin-left:10px; width:400px; min-height:120px; background-color:#E0E0F0"
+                                         ,body))))))))
+
+(get "/"
+     (form-page "tiny.io"
+          (&form id:"createForm" method:"post"
+               (&table width:"400px" align:"center" cellpadding:"5"
+                    (&tr (&td align:"center"
+                              (&input type:"text" name:"url" size:"54")
+                              (&hr)
+                              (&input type:"submit" name:"submit" value:"Make Tiny URL!"
+                                   style:"position:absolute; margin-top:12px")
+                              (&span style:"size:80%"
+                                   (&table align:"right"
+                                        (&tr (&td align:"right" "User Key")
+                                             (&td (&input type:"password" name:"key" value:""
+                                                       size:"20" maxlength:"40")
+                                                  "(required)"))
+                                        (&tr (&td align:"right"
+                                                  style:"font-family:courier" "http://tiny.io/")
+                                             (&td (&input type:"tiny" name:"tiny" value:""
+                                                       size:"20" maxlength:"40"
+                                                       "(optional)")))))))))))
+
+(post "/"
+      (set key ((REQUEST post) key:))
+      (if (set secret (mongo findOne:(dict key:key) inCollection:"tinyio.secrets"))
+          (then (set TINY_KEY (secret key:)))
+          (else (set TINY_KEY (((NSProcessInfo processInfo) environment) TINY_KEY:))))
+      (if (eq key TINY_KEY)
+          (then (if (and (set url ((REQUEST post) url:)) (> (url length) 0))
+                    (then
+                         (if (and (set tiny ((REQUEST post) tiny:)) (> (tiny length) 0))
+                             ;; the user has specified a desired tiny url
+                             (then (set newtiny (save-url-with-tiny url tiny))
+                                   (if (eq newtiny tiny)
+                                       (then (set response (dict status:"OK"
+                                                                 message:"Here is your new tiny url."
+                                                                 tinyurl:(+ "http://" HOST "/" newtiny))))
+                                       (else (if newtiny
+                                                 (then (set response
+                                                            (dict status:"OK"
+                                                                  message:"A tiny url already exists for this url, please use this existing value."
+                                                                  tinyurl:(+ "http://" HOST "/" newtiny))))
+                                                 (else (set response
+                                                            (dict status:"ERROR"
+                                                                  message:"The requested tiny url is in use for another url.")))))))
+                             ;; we tell the database to select a tiny url at random
+                             (else (set newtiny (save-url url))
+                                   (set response (dict status:"OK"
+                                                       message:"Here is your new tiny url."
+                                                       tinyurl:(+ "http://" HOST "/" newtiny))))))
+                    ;; fail if there is no url specified
+                    (else (set response (dict status:"ERROR"
+                                              message:"Please specify a url.")))))
+          ;; fail if the key is not valid
+          (else (set response (dict status:"ERROR"
+                                    message:"Please provide a valid user key."))))
+      (form-page "tiny.io"
+           (&table width:"400px" align:"center" cellpadding:"5"
+                (&tr (&td align:"center" (response message:)))
+                (if (response tinyurl:)
+                    (then (&tr (&td align:"center"
+                                    (&a href:(response tinyurl:) target:"_blank" (response tinyurl:)))))
+                    (else (&tr (&td align:"center"
+                                    (&a href:"/" "Return to form."))))))))
+
+;; evaluate tinyurls
 
 (get "/id:"
-     (generate html:"site/redirect.nu"))
+     (set tiny ((REQUEST bindings) id:))
+     (set tinyurl (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls"))
+     (if (and tinyurl (set url (tinyurl url:)))
+         (then (set hit (dict tiny:tiny
+                              created:((NSDate date) timeIntervalSinceReferenceDate)))
+               (set headers (REQUEST requestHeaders))
+               (if (headers X-Forwarded-For:) ;; set by proxy server
+                   (hit ip_address:(headers X-Forwarded-For:)))
+               (if (headers User-Agent:)
+                   (hit user_agent:(headers User-Agent:)))
+               (if (headers Referer:)
+                   (hit referrer:(headers Referer:)))
+               (set ip_address (hit ip_address:))
+               (mongo insertObject:hit intoCollection:"tinyio.hits")
+               (REQUEST redirectResponseToLocation:url))
+         (else nil)))
 
+;; simple analytics
+
+(macro report-page (title results)
+     `(&html
+           (&head
+                (&link href:"/css/style.css" rel:"stylesheet" type:"text/css")
+                (&meta http-equiv:"Content-type" content:"text/html;charset:UTF-8")
+                (&title ,title))
+           (&body
+                (&h1 ,title)
+                (&table width:"100%"
+                     (&tr (&th "tiny")
+                          (&th "ip address")
+                          (&th "referrer")
+                          (&th "created")
+                          (&th "user agent"))
+                     (,results map:
+                          (do (tinyurl)
+                              (&tr (&td (&a href:(+ "/hits/url/" (tinyurl tiny:)) (tinyurl tiny:)))
+                                   (&td (if (tinyurl ip_address:)
+                                             (&a href:(+ "/hits/ip/" (tinyurl ip_address:))
+                                                  (tinyurl ip_address:))))
+                                   (&td (if (tinyurl referrer:)
+                                             (&a href:(+ "/hits/referrer?url=" ((tinyurl referrer:) urlEncode))
+                                                  (tinyurl referrer:))))
+                                   (&td (if (tinyurl created:)
+                                             ((NSDate dateWithTimeIntervalSinceReferenceDate:
+                                                      ((tinyurl created:) doubleValue))
+                                              description)))
+                                   (&td (if (tinyurl user_agent:)
+                                             (&a href:(+ "/hits/useragent?agent=" ((tinyurl user_agent:) urlEncode))
+                                                  (tinyurl user_agent:)))))))))))
+
+(get "/hits/recent"
+     (set results (mongo findArray:(dict $query:(dict) $orderby:(dict created:-1))
+                         inCollection:"tinyio.hits"
+                         returningFields:nil
+                         numberToReturn:100
+                         numberToSkip:0))
+     (report-page "Recent Visitors" results))
+
+(get "/hits/referrer"
+     (set referrer ((REQUEST query) url:))
+     (set results (mongo findArray:(dict $query:(dict referrer:referrer) $orderby:(dict created:-1))
+                         inCollection:"tinyio.hits"
+                         returningFields:nil
+                         numberToReturn:100
+                         numberToSkip:0))
+     (report-page "Recent Visitors" results))
+
+(get "/hits/useragent"
+     (set useragent (((REQUEST query) agent:) urlDecode))
+     (set results (mongo findArray:(dict $query:(dict user_agent:useragent) $orderby:(dict created:-1))
+                         inCollection:"tinyio.hits"
+                         returningFields:nil
+                         numberToReturn:100
+                         numberToSkip:0))
+     (report-page "Recent Visitors" results))
+
+(get "/hits/url/tinyurl:"
+     (set tiny ((REQUEST bindings) tinyurl:))
+     (set results (mongo findArray:(dict $query:(dict tiny:tiny) $orderby:(dict created:-1))
+                         inCollection:"tinyio.hits"
+                         returningFields:nil
+                         numberToReturn:100
+                         numberToSkip:0))
+     (report-page "Recent Visitors" results))
+
+(get "/hits/ip/ip:"
+     (set ip-address ((REQUEST bindings) ip:))
+     (set results (mongo findArray:(dict $query:(dict ip_address:ip-address) $orderby:(dict created:-1))
+                         inCollection:"tinyio.hits"
+                         returningFields:nil
+                         numberToReturn:100
+                         numberToSkip:0))
+     (report-page "Recent Visitors" results))

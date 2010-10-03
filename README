@@ -14,7 +14,6 @@ DEPENDENCIES
 This tiny url service is built using the following components:
 	Nu		The Nu scripting language
 	NuMongoDB	Objective-C interface to MongoDB
-	NuJSON		Objective-C library for JSON serialization
 	NuMarkup 	Nu operators for HTML generation	
 	Nunja		A libevent-based webserver for use with Nu
 	NuHTTPHelpers	HTTP helpers for use with Nu and Nunja
@@ -22,17 +21,17 @@ This tiny url service is built using the following components:
 A MongoDB installation is also necessary.
 
 
-A TINY API 
+URL CREATION
 
-Currently tiny urls are created with a call to the tiny.io API.
+Currently tiny urls are created with a post to root of the tiny.io API.
 
 Examples:
 
-1. curl http://tiny.io/api/shorten -d url=http://www.neontology.com -d key=TINY_KEY
+1. curl http://tiny.io/ -d url=http://www.neontology.com -d key=TINY_KEY
 
-   This creates and returns a random string as the tiny url.
+   This generates a random string to use as the tiny url.
 
-2. curl http://tiny.io/api/shorten -d url=http://programming.nu -d tiny=nu -d key=TINY_KEY
+2. curl http://tiny.io/ -d url=http://programming.nu -d tiny=nu -d key=TINY_KEY
 
    This attempts to use the specified string as the tiny url.
 
