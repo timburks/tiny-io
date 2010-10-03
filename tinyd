@@ -39,7 +39,7 @@
 (set argi (+ argi 1))
 
 ;; the option(s) we need to set
-(set site nil)
+(set site ".")
 (set port 9000)
 (set localOnly NO)
 
