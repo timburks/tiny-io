@@ -1,9 +1,9 @@
 #!/usr/local/bin/nush
 #
-# @file tinyd
-# The tiny.io daemon.
+# @file nunjad
+# The Nunja daemon.
 #
-# @copyright  Copyright (c) 2010 Neon Design Technology, Inc.
+# @copyright  Copyright (c) 2008 Neon Design Technology, Inc.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@
 (set argv ((NSProcessInfo processInfo) arguments))
 (set argi 0)
 
-((((NSProcessInfo processInfo) processIdentifier) stringValue) writeToFile:"tinyd.pid" atomically:NO)
-
 ;; if we're running as a nush script, skip the nush path
 (if (/(.*)nush$/ findInString:(argv 0))
     (set argi (+ argi 1)))
@@ -40,7 +38,7 @@
 
 ;; the option(s) we need to set
 (set site ".")
-(set port 9000)
+(set port 3000)
 (set localOnly NO)
 
 ;; process the remaining arguments
@@ -59,14 +57,16 @@
        (set argi (+ argi 1)))
 
 (set n (Nunja nunja))
+
 (if localOnly
     (then (n bindToAddress:"127.0.0.1" port:port))
     (else (n bindToAddress:"0.0.0.0" port:port)))
 
 (if site
-    (n setDelegate:((NunjaDelegate alloc) initWithSite:site)))
-(puts (+ "tinyd is running on port " port))
+    ((n delegate) configureSite:site))
+
+(puts (+ "Nunja is running on port " port))
 (set $site site) ;; make the path to the site directory available to handlers
-((n delegate) dump)
+(if (Nunja verbose) ((n delegate) dump))
 (n run)
 

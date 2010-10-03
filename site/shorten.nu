@@ -1,6 +1,8 @@
 (set key ((REQUEST post) key:))
 
-(set TINY_KEY (((NSProcessInfo processInfo) environment) TINY_KEY:))
+(if (set secret (mongo findOne:(dict key:key) inCollection:"tinyio.secrets"))
+    (then (set TINY_KEY (secret key:)))
+    (else (set TINY_KEY (((NSProcessInfo processInfo) environment) TINY_KEY:))))
 
 (if (eq key TINY_KEY)
     (then (if (and (set url ((REQUEST post) url:)) (> (url length) 0))

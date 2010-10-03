@@ -1,6 +1,7 @@
 (set tiny ((REQUEST bindings) id:))
 
 (set tinyurl (mongo findOne:(dict tiny:tiny) inCollection:"tinyio.tinyurls"))
+(puts ((REQUEST requestHeaders) description))
 
 (if (and tinyurl (set url (tinyurl url:)))
     (then (set hit (dict tiny:tiny
